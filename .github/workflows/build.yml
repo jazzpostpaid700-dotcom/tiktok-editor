@@ -34,6 +34,12 @@ jobs:
           echo "CHOSEN_DEP=$DEP"
           if [ -n "$DEP" ]; then
             sed -i -E "s/com\.arthenica:ffmpeg-kit-[a-z-]+:[^\"']+/$DEP/" project/tiktok-editor-app/app/build.gradle.kts
+          else
+            echo "No ffmpeg-kit artifact on Maven Central - using local stub from ffmpeg-stub/"
+            sed -i -E "/com\.arthenica:ffmpeg-kit/d" project/tiktok-editor-app/app/build.gradle.kts
+            mkdir -p project/tiktok-editor-app/app/src/main/java/com/arthenica/ffmpegkit
+            cp ffmpeg-stub/com/arthenica/ffmpegkit/*.kt project/tiktok-editor-app/app/src/main/java/com/arthenica/ffmpegkit/
+            ls -l project/tiktok-editor-app/app/src/main/java/com/arthenica/ffmpegkit/
           fi
           grep -n ffmpeg project/tiktok-editor-app/app/build.gradle.kts || echo "no ffmpeg dep line"
           cat project/tiktok-editor-app/app/build.gradle.kts
