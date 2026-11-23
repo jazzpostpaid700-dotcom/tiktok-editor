@@ -22,7 +22,8 @@ jobs:
           FILE=$(find project -name MainActivity.kt | head -n 1)
           echo "MainActivity: $FILE"
           grep -n "720\|1280\|1080\|1920" "$FILE" | head -n 20
-          grep -n -B 2 -A 4 "FFmpegKit\|FFprobeKit" "$FILE" | head -n 80
+          echo "=== MainActivity lines 200-430 ==="
+          awk 'NR>=200 && NR<=430 {print NR": "$0}' "$FILE"
           DEP=""
           for CAND in ffmpeg-kit-full-gpl:6.0.LTS ffmpeg-kit-full:6.0.LTS ffmpeg-kit-full-gpl:6.0 ffmpeg-kit-full:6.0 ffmpeg-kit-video:6.0.LTS ffmpeg-kit-min:6.0.LTS ffmpeg-kit-https:6.0.LTS ffmpeg-kit-audio:6.0.LTS ffmpeg-kit-full:5.1.LTS ffmpeg-kit-full-gpl:5.1.LTS ffmpeg-kit-full:5.1 ffmpeg-kit-video:5.1.LTS; do
             ART="${CAND%%:*}"
