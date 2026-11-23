@@ -15,13 +15,28 @@ jobs:
           distribution: 'temurin'
       - name: Unzip project
         run: unzip -o tiktok-editor-app.zip -d project
-      - name: Fix misplaced ndk block and ffmpeg-kit dependency
+      - name: Fix ndk and resolve ffmpeg-kit
         run: |
           perl -0777 -i -pe 's/^[ \t]*ndk[ \t]*\{[^}]*\}[ \t]*\n//gm' project/tiktok-editor-app/app/build.gradle.kts
-          sed -i 's/com.arthenica:ffmpeg-kit-video:6.0-2/com.arthenica:ffmpeg-kit-full:6.0.LTS/' project/tiktok-editor-app/app/build.gradle.kts
-          echo "ffmpeg-kit-full pom status:"
-          curl -s -o /dev/null -w "%{http_code}\n" https://repo.maven.apache.org/maven2/com/arthenica/ffmpeg-kit-full/6.0.LTS/ffmpeg-kit-full-6.0.LTS.pom
-          grep ffmpeg-kit project/tiktok-editor-app/app/build.gradle.kts
+          grep -n ffmpeg-kit project/tiktok-editor-app/app/build.gradle.kts || true
+          FILE=$(find project -name MainActivity.kt | head -n 1)
+          echo "MainActivity: $FILE"
+          grep -n "720\|1280\|1080\|1920" "$FILE" | head -n 20
+          grep -n -B 2 -A 4 "FFmpegKit\|FFprobeKit" "$FILE" | head -n 80
+          DEP=""
+          for CAND in ffmpeg-kit-full-gpl:6.0.LTS ffmpeg-kit-full:6.0.LTS ffmpeg-kit-full-gpl:6.0 ffmpeg-kit-full:6.0 ffmpeg-kit-video:6.0.LTS ffmpeg-kit-min:6.0.LTS ffmpeg-kit-https:6.0.LTS ffmpeg-kit-audio:6.0.LTS ffmpeg-kit-full:5.1.LTS ffmpeg-kit-full-gpl:5.1.LTS ffmpeg-kit-full:5.1 ffmpeg-kit-video:5.1.LTS; do
+            ART="${CAND%%:*}"
+            VER="${CAND##*:}"
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://repo.maven.apache.org/maven2/com/arthenica/$ART/$VER/$ART-$VER.pom")
+            echo "$CAND pom HTTP $CODE"
+            if [ "$CODE" = "200" ]; then DEP="com.arthenica:$ART:$VER"; break; fi
+          done
+          echo "CHOSEN_DEP=$DEP"
+          if [ -n "$DEP" ]; then
+            sed -i -E "s/com\.arthenica:ffmpeg-kit-[a-z-]+:[^\"']+/$DEP/" project/tiktok-editor-app/app/build.gradle.kts
+          fi
+          grep -n ffmpeg project/tiktok-editor-app/app/build.gradle.kts || echo "no ffmpeg dep line"
+          cat project/tiktok-editor-app/app/build.gradle.kts
       - name: Build debug APK
         run: |
           ls -R project | head -n 100
