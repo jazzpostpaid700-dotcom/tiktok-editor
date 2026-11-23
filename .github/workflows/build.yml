@@ -15,15 +15,25 @@ jobs:
           distribution: 'temurin'
       - name: Unzip project
         run: unzip -o tiktok-editor-app.zip -d project
-      - name: Show app build file
+      - name: Check ffmpeg-kit availability
         run: |
-          echo "=== app/build.gradle.kts ==="
-          cat -n project/tiktok-editor-app/app/build.gradle.kts
+          echo "=== settings ==="
+          cat project/tiktok-editor-app/settings.gradle.kts 2>/dev/null || cat project/tiktok-editor-app/settings.gradle 2>/dev/null || echo "no settings file"
+          echo "=== ffmpeg usage ==="
+          grep -rn -i "ffmpeg" project/tiktok-editor-app/app/src --include="*.kt" | head -n 120 || true
+          echo "=== maven metadata ffmpeg-kit-video ==="
+          curl -s https://repo.maven.apache.org/maven2/com/arthenica/ffmpeg-kit-video/maven-metadata.xml || true
+          echo "=== maven metadata ffmpeg-kit-full ==="
+          curl -s https://repo.maven.apache.org/maven2/com/arthenica/ffmpeg-kit-full/maven-metadata.xml || true
       - name: Fix misplaced ndk block
         run: |
           perl -0777 -i -pe 's/^[ \t]*ndk[ \t]*\{[^}]*\}[ \t]*\n//gm' project/tiktok-editor-app/app/build.gradle.kts
           echo "=== after fix, lines 25-50 ==="
           cat -n project/tiktok-editor-app/app/build.gradle.kts | sed -n '25,50p'
+      - name: Fix ffmpeg-kit version
+        run: |
+          sed -i 's/com.arthenica:ffmpeg-kit-video:6.0-2/com.arthenica:ffmpeg-kit-video:6.0/' project/tiktok-editor-app/app/build.gradle.kts
+          grep ffmpeg-kit project/tiktok-editor-app/app/build.gradle.kts
       - name: Build debug APK
         run: |
           ls -R project | head -n 100
