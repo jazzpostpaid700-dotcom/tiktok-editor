@@ -15,6 +15,15 @@ jobs:
           distribution: 'temurin'
       - name: Unzip project
         run: unzip -o tiktok-editor-app.zip -d project
+      - name: Show app build file
+        run: |
+          echo "=== app/build.gradle.kts ==="
+          cat -n project/tiktok-editor-app/app/build.gradle.kts
+      - name: Fix misplaced ndk block
+        run: |
+          perl -0777 -i -pe 's/^[ \t]*ndk[ \t]*\{[^}]*\}[ \t]*\n//gm' project/tiktok-editor-app/app/build.gradle.kts
+          echo "=== after fix, lines 25-50 ==="
+          cat -n project/tiktok-editor-app/app/build.gradle.kts | sed -n '25,50p'
       - name: Build debug APK
         run: |
           ls -R project | head -n 100
