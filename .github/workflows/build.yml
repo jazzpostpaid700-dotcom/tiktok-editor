@@ -15,21 +15,22 @@ jobs:
           distribution: 'temurin'
       - name: Unzip project
         run: unzip -o tiktok-editor-app.zip -d project
-      - name: Probe ffmpeg-kit sources
+      - name: Probe ffmpeg-kit sources 2
         run: |
           FILE=$(find project -name MainActivity.kt | head -n 1)
-          echo "FILE=$FILE"
-          grep -n "FFmpeg\|FFprobe\|ReturnCode" "$FILE" | head -n 80
-          echo "=== MainActivity 250-390 ==="
-          sed -n '250,390p' "$FILE"
-          echo "=== github releases assets ==="
-          curl -s "https://api.github.com/repos/arthenica/ffmpeg-kit/releases?per_page=3" | grep -E '"name"|"browser_download_url"' | head -n 120
-          echo "=== candidate AAR HEAD ==="
-          for u in https://github.com/arthenica/ffmpeg-kit/releases/download/v6.0/ffmpeg-kit-video-6.0.aar https://github.com/arthenica/ffmpeg-kit/releases/download/v6.0-2/ffmpeg-kit-video-6.0-2.aar https://github.com/arthenica/ffmpeg-kit/releases/download/v5.1/ffmpeg-kit-video-5.1.aar; do echo "$u"; curl -sI "$u" | head -n 6; done
-          echo "=== maven central arthenica dir ==="
-          curl -s https://repo.maven.apache.org/maven2/com/arthenica/ | head -n 40
-          echo "=== jitpack ffmpeg-kit ==="
-          curl -s https://jitpack.io/com/github/arthenica/ffmpeg-kit/6.0/ffmpeg-kit-6.0.pom | head -n 20 || true
+          echo "FILE=$FILE lines=$(wc -l < "$FILE")"
+          echo "=== FFmpeg usage with context ==="
+          grep -n -B 4 -A 8 "FFmpegKit\|FFprobeKit\|ReturnCode" "$FILE" | head -n 200
+          echo "=== search.maven.org arthenica ==="
+          curl -s "https://search.maven.org/solrsearch/select?q=g:com.arthenica&rows=20&wt=json" | head -c 2000; echo
+          echo "=== search.maven.org ffmpeg-kit ==="
+          curl -s "https://search.maven.org/solrsearch/select?q=ffmpeg-kit&rows=20&wt=json" | head -c 2000; echo
+          echo "=== github api arthenica repo ==="
+          curl -s -w " HTTP:%{http_code}\n" https://api.github.com/repos/arthenica/ffmpeg-kit | head -c 1000; echo
+          echo "=== github api tanersener releases ==="
+          curl -s "https://api.github.com/repos/tanersener/ffmpeg-kit/releases?per_page=2" | grep -E '"name"|"browser_download_url"' | head -n 60
+          echo "=== pom HEAD checks ==="
+          for v in 6.0 6.0-2 5.1 5.1-2.LTS 6.0.LTS 4.5; do echo -n "$v: "; curl -s -o /dev/null -w "%{http_code}\n" https://repo.maven.apache.org/maven2/com/arthenica/ffmpeg-kit-video/$v/ffmpeg-kit-video-$v.pom; done
       - name: Fix misplaced ndk block
         run: |
           perl -0777 -i -pe 's/^[ \t]*ndk[ \t]*\{[^}]*\}[ \t]*\n//gm' project/tiktok-editor-app/app/build.gradle.kts
